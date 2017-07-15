@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd ">
+
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://localhost:3306/DBname"/>
+        <property name="password" value="password"/>
+        <property name="username" value="username"/>
+
+    </bean>
+<!-- don`t forget to change DB name/username/password-->
+
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.hbm2ddl.auto">update</prop>
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.format_sql">true</prop>
+            </props>
+        </property>
+        <property name="packagesToScan">
+            <list>
+                <value>com.project.online</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize" value="2147483648"/>
+    </bean>
+
+    <security:http auto-config="true">
+        <security:intercept-url pattern="/admin/**" access="ROLE_ADMIN"/>
+        <security:intercept-url pattern="/user/**" access="ROLE_USER, ROLE_ADMIN"/>
+        <security:form-login
+                login-page="/login"
+                default-target-url="/series/seriesList/all"
+                authentication-failure-url="/login?error"
+                username-parameter="userName"
+                password-parameter="password"
+        />
+        <security:logout
+                logout-success-url="/login?logout"/>
+    </security:http>
+
+
+    <security:authentication-manager>
+        <security:authentication-provider>
+            <security:jdbc-user-service data-source-ref="dataSource"
+                                        authorities-by-username-query="SELECT userName,authority FROM authorities WHERE userName = ?"
+                                        users-by-username-query="SELECT userName, password, enabled FROM users WHERE userName = ?"/>
+
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+
+</beans>
